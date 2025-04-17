@@ -1,1 +1,59 @@
-<h1>oi</h1>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fluxo de Voos para o Espírito Santo</title>
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+    #globeViz { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="globeViz"></div>
+
+  <script>
+    const globe = Globe()(document.getElementById('globeViz'))
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .backgroundColor('#000')
+      .arcColor(d => d.color)
+      .arcDashLength(0.4)
+      .arcDashGap(2)
+      .arcDashAnimateTime(4000)
+      .arcAltitudeAutoScale(true)
+      .arcStroke(0.7)
+      .arcsTransitionDuration(1000);
+
+    const arcs = [
+      {
+        from: "São Paulo", startLat: -23.5505, startLng: -46.6333,
+        to: "Vitória", endLat: -20.3155, endLng: -40.3128,
+        color: ['#ffffff', '#ff3366']
+      },
+      {
+        from: "Rio de Janeiro", startLat: -22.9068, startLng: -43.1729,
+        to: "Vitória", endLat: -20.3155, endLng: -40.3128,
+        color: ['#ffffff', '#3366ff']
+      },
+      {
+        from: "Belo Horizonte", startLat: -19.9167, startLng: -43.9345,
+        to: "Vitória", endLat: -20.3155, endLng: -40.3128,
+        color: ['#ffffff', '#33cc33']
+      },
+      {
+        from: "Brasília", startLat: -15.7801, startLng: -47.9292,
+        to: "Vitória", endLat: -20.3155, endLng: -40.3128,
+        color: ['#ffffff', '#ffcc00']
+      },
+      {
+        from: "Salvador", startLat: -12.9714, startLng: -38.5014,
+        to: "Vitória", endLat: -20.3155, endLng: -40.3128,
+        color: ['#ffffff', '#9900cc']
+      }
+    ];
+
+    globe.arcsData(arcs);
+  </script>
+</body>
+</html>
