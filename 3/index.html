@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Globo 3D - Voos para Vitória</title>
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    body { margin: 0; background: #ffffff; font-family: sans-serif; }
+    #globeViz { width: 100vw; height: 100vh; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    #controls button {
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      pointer-events: none;
+      display: none;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <button onclick="toggle('arcs')">Ativar/Desativar Arcos Dinâmicos</button>
+  <button onclick="toggle('fixedArcs')">Ativar/Desativar Arcos Fixos</button>
+  <button onclick="toggle('points')">Ativar/Desativar Capitais</button>
+  <button onclick="toggle('states')">Ativar/Desativar Estados</button>
+</div>
+<div id="globeViz"></div>
+<div id="tooltip"></div>
+
+<script>
+  const tooltip = document.getElementById('tooltip');
+  const globe = Globe()(document.getElementById('globeViz'))
+    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+    .backgroundColor('#ffffff')
+    .pointColor(() => 'black')
+    .pointAltitude(0.01)
+    .pointRadius(0.08)
+    .arcDashLength(0.4)
+    .arcDashGap(2)
+    .arcDashAnimateTime(4000)
+    .arcAltitudeAutoScale(true)
+    .onArcHover(showTooltip)
+    .onPointHover(showTooltip)
+    .onPolygonHover(showTooltip);
+
+  const arcData = [
+    { from: "São Paulo", lat: -23.5505, lng: -46.6333, volume: 12000 },
+    { from: "Rio de Janeiro", lat: -22.9068, lng: -43.1729, volume: 8000 },
+    { from: "Belo Horizonte", lat: -19.9167, lng: -43.9345, volume: 9500 },
+    { from: "Brasília", lat: -15.7801, lng: -47.9292, volume: 6000 },
+    { from: "Salvador", lat: -12.9714, lng: -38.5014, volume: 7000 },
+    { from: "Recife", lat: -8.0476, lng: -34.8770, volume: 4000 },
+    { from: "Porto Alegre", lat: -30.0346, lng: -51.2177, volume: 3000 },
+    { from: "Curitiba", lat: -25.4284, lng: -49.2733, volume: 3500 },
+    { from: "Goiânia", lat: -16.6864, lng: -49.2643, volume: 2800 },
+    { from: "Manaus", lat: -3.1190, lng: -60.0217, volume: 2500 }
+  ];
+  const destino = { to: "Vitória", lat: -20.3155, lng: -40.3128 };
+
+  const maxVolume = Math.max(...arcData.map(d => d.volume));
+  const dynamicArcs = arcData.map(d => ({
+    startLat: d.lat,
+    startLng: d.lng,
+    endLat: destino.lat,
+    endLng: destino.lng,
+    color: ['#000000', `hsl(${(1 - d.volume / maxVolume) * 200}, 100%, 50%)`],
+    stroke: 0.3 + (d.volume / maxVolume) * 1,
+    from: d.from, to: destino.to, volume: d.volume
+  }));
+  const fixedArcs = arcData.map(d => ({
+    startLat: d.lat,
+    startLng: d.lng,
+    endLat: destino.lat,
+    endLng: destino.lng,
+    color: ['#999999'],
+    stroke: 0.4,
+    dashLength: 0.1,
+    dashGap: 2
+  }));
+
+  const points = [...arcData.map(d => ({ lat: d.lat, lng: d.lng, name: d.from })), {
+    lat: destino.lat, lng: destino.lng, name: destino.to
+  }];
+
+  globe.arcsData(dynamicArcs);
+  globe.pointsData(points);
+  globe.pointOfView({ lat: -14.2350, lng: -51.9253, altitude: 1.6 }, 0);
+
+  fetch('estados-brasil.geojson')
+    .then(res => res.json())
+    .then(data => globe.polygonsData(data.features)
+      .polygonCapColor(() => 'rgba(150,150,150,0.2)')
+      .polygonSideColor(() => 'rgba(80,80,80,0.1)')
+      .polygonStrokeColor(() => '#333')
+      .polygonLabel(d => d.properties.name));
+
+  function showTooltip(obj) {
+    if (obj) {
+      tooltip.style.display = 'block';
+      tooltip.innerHTML = obj.from
+        ? `${obj.from} → ${obj.to}<br>Voos: ${obj.volume}`
+        : obj.name || (obj.properties && obj.properties.name);
+    } else {
+      tooltip.style.display = 'none';
+    }
+  }
+
+  document.getElementById('globeViz').addEventListener('mousemove', e => {
+    tooltip.style.left = (e.clientX + 10) + 'px';
+    tooltip.style.top = (e.clientY + 10) + 'px';
+  });
+
+  function toggle(type) {
+    switch (type) {
+      case 'arcs':
+        globe.arcsData().length ? globe.arcsData([]) : globe.arcsData(dynamicArcs);
+        break;
+      case 'fixedArcs':
+        globe.arcsData().length && globe.arcsData(fixedArcs);
+        break;
+      case 'points':
+        globe.pointsData().length ? globe.pointsData([]) : globe.pointsData(points);
+        break;
+      case 'states':
+        globe.polygonsData().length ? globe.polygonsData([]) : fetch('estados-brasil.geojson')
+          .then(res => res.json())
+          .then(data => globe.polygonsData(data.features));
+        break;
+    }
+  }
+</script>
+
+</body>
+</html>
