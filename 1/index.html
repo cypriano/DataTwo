@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Fluxo de Voos para Vitória</title>
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #ffffff; }
+    #globeViz { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+
+<div id="globeViz"></div>
+
+<script>
+  const globe = Globe()(document.getElementById('globeViz'))
+    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+    .backgroundColor('#ffffff') // fundo branco
+    .arcColor(d => d.color)
+    .arcDashLength(0.4)
+    .arcDashGap(2)
+    .arcDashAnimateTime(4000)
+    .arcAltitudeAutoScale(true)
+    .arcStroke(d => d.stroke)
+    .pointColor(() => 'black')
+    .pointAltitude(0.01)
+    .pointRadius(0.08)
+    .pointsMerge(true)
+    .arcsTransitionDuration(1000)
+    .pointLabel(d => d.name);
+
+  const arcData = [
+    { from: "São Paulo", latFrom: -23.5505, lngFrom: -46.6333, volume: 12000 },
+    { from: "Rio de Janeiro", latFrom: -22.9068, lngFrom: -43.1729, volume: 8000 },
+    { from: "Belo Horizonte", latFrom: -19.9167, lngFrom: -43.9345, volume: 9500 },
+    { from: "Brasília", latFrom: -15.7801, lngFrom: -47.9292, volume: 6000 },
+    { from: "Salvador", latFrom: -12.9714, lngFrom: -38.5014, volume: 7000 },
+    { from: "Recife", latFrom: -8.0476, lngFrom: -34.8770, volume: 4000 },
+    { from: "Porto Alegre", latFrom: -30.0346, lngFrom: -51.2177, volume: 3000 },
+    { from: "Curitiba", latFrom: -25.4284, lngFrom: -49.2733, volume: 3500 },
+    { from: "Goiânia", latFrom: -16.6864, lngFrom: -49.2643, volume: 2800 },
+    { from: "Manaus", latFrom: -3.1190, lngFrom: -60.0217, volume: 2500 }
+  ];
+
+  const destino = {
+    to: "Vitória", latTo: -20.3155, lngTo: -40.3128
+  };
+
+  const maxVolume = Math.max(...arcData.map(d => d.volume));
+
+  const arcs = arcData.map(d => ({
+    startLat: d.latFrom,
+    startLng: d.lngFrom,
+    endLat: destino.latTo,
+    endLng: destino.lngTo,
+    color: ['#000000', `hsl(${(1 - d.volume / maxVolume) * 200}, 100%, 50%)`],
+    stroke: 0.3 + (d.volume / maxVolume) * 1,
+    from: d.from,
+    to: destino.to,
+    volume: d.volume
+  }));
+
+  // Arcos de voo
+  globe.arcsData(arcs);
+
+  // Pontos nas capitais e Vitória
+  const points = [
+    ...arcData.map(d => ({
+      lat: d.latFrom,
+      lng: d.lngFrom,
+      name: d.from
+    })),
+    {
+      lat: destino.latTo,
+      lng: destino.lngTo,
+      name: destino.to
+    }
+  ];
+
+  globe.pointsData(points);
+
+  // Focar no Brasil
+  globe.pointOfView({ lat: -14.2350, lng: -51.9253, altitude: 1.7 }, 0);
+</script>
+
+</body>
+</html>
