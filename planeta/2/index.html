@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa Estelar Interativo — por Cibertrópico</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: white; font-family: sans-serif; }
+    #ui { position: absolute; top: 10px; left: 10px; z-index: 10; }
+    .controls { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="controls">
+      <label>Data simulada:</label>
+      <input type="range" id="dateSlider" min="-182500" max="182500" value="0" />
+      <span id="dateLabel">01/01/2000</span>
+    </div>
+    <div class="controls">
+      <label>Zoom:</label>
+      <button onclick="zoomIn()">+</button>
+      <button onclick="zoomOut()">−</button>
+    </div>
+    <div class="controls">
+      <label>Velocidade:</label>
+      <select id="speedSelect" onchange="changeSpeed()">
+        <option value="1">x1</option>
+        <option value="10">x10</option>
+        <option value="100">x100</option>
+      </select>
+    </div>
+    <div class="controls">
+      <label>Conexões:</label>
+      <button onclick="toggleConnections()">Ativar/Desativar</button>
+    </div>
+    <div class="controls">
+      <label>Espessura:</label>
+      <input type="range" id="lineWeight" min="1" max="10" value="2" />
+    </div>
+    <div class="controls">
+      <button onclick="togglePlay()">▶️ Play / ⏸️ Pause</button>
+    </div>
+  </div>
+
+  <script>
+    let planets = [];
+    let zoom = 1;
+    let connectionsOn = false;
+    let speedMultiplier = 1;
+    let baseDate = new Date(2000, 0, 1);
+    let isPlaying = false;
+    let lastFrameTime = 0;
+
+    const orbitalPeriods = {
+      Mercury: 88, Venus: 225, Earth: 365,
+      Mars: 687, Jupiter: 4333, Saturn: 10759,
+      Uranus: 30687, Neptune: 60190
+    };
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      let colors = ["gray", "orange", "blue", "red", "gold", "beige", "cyan", "indigo"];
+      let dists = [60, 90, 130, 180, 240, 300, 360, 420];
+      let i = 0;
+      for (let name in orbitalPeriods) {
+        planets.push(new Planet(name, dists[i], 8, orbitalPeriods[name], colors[i]));
+        i++;
+      }
+      updateDateDisplay();
+      document.getElementById("dateSlider").addEventListener("input", updateDateDisplay);
+    }
+
+    function draw() {
+      background(255);
+      translate(width / 2, height / 2);
+      scale(zoom);
+    
+    // Sol no centro
+noStroke();
+fill(255, 204, 0);
+ellipse(0, 0, 40);
+
+      noFill();
+      stroke(220);
+      for (let p of planets) ellipse(0, 0, p.dist * 2);
+
+      let days = int(document.getElementById("dateSlider").value);
+      let adjusted = days * speedMultiplier;
+
+      let positions = [];
+      for (let p of planets) {
+        let angle = TWO_PI * (adjusted % p.period) / p.period;
+        let x = cos(angle) * p.dist;
+        let y = sin(angle) * p.dist;
+        fill(p.col); noStroke();
+        ellipse(x, y, p.size * 2);
+        positions.push({x, y});
+      }
+
+      if (connectionsOn) {
+        stroke(0);
+        strokeWeight(document.getElementById("lineWeight").value);
+        noFill();
+        beginShape();
+        for (let pos of positions) vertex(pos.x, pos.y);
+        endShape(CLOSE);
+      }
+
+      if (isPlaying) {
+        if (millis() - lastFrameTime > 50) {
+          let slider = document.getElementById("dateSlider");
+          slider.value = parseInt(slider.value) + 1;
+          updateDateDisplay();
+          lastFrameTime = millis();
+        }
+      }
+    }
+
+    class Planet {
+      constructor(name, dist, size, period, col) {
+        this.name = name; this.dist = dist;
+        this.size = size; this.period = period;
+        this.col = col;
+      }
+    }
+
+    function zoomIn() { zoom *= 1.1; }
+    function zoomOut() { zoom /= 1.1; }
+    function toggleConnections() { connectionsOn = !connectionsOn; }
+    function togglePlay() { isPlaying = !isPlaying; }
+    function changeSpeed() {
+      speedMultiplier = parseInt(document.getElementById("speedSelect").value);
+    }
+
+    function updateDateDisplay() {
+      let offset = parseInt(document.getElementById("dateSlider").value);
+      let current = new Date(baseDate);
+      current.setDate(current.getDate() + offset);
+      document.getElementById("dateLabel").textContent = current.toLocaleDateString("pt-BR");
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
+</body>
+</html>
