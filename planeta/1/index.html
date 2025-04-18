@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mapa Estelar por Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      let sun;
+      let planets = [];
+      let earth, moon;
+      let zoom = 1;
+      let daysPassed = 0;
+      let slider;
+
+      // Períodos orbitais em dias (aproximados)
+      const orbitalPeriods = {
+        Mercury: 88,
+        Venus: 225,
+        Earth: 365,
+        Mars: 687,
+        Jupiter: 4333,
+        Saturn: 10759,
+        Uranus: 30687,
+        Neptune: 60190
+      };
+
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+
+        sun = new CelestialBody(0, 0, 40, color(255, 204, 0));
+
+        planets.push(new Planet("Mercury", 60, 6, orbitalPeriods.Mercury, color(150)));
+        planets.push(new Planet("Venus", 90, 8, orbitalPeriods.Venus, color(180, 130, 80)));
+        earth = new Planet("Earth", 130, 12, orbitalPeriods.Earth, color(0, 120, 255));
+        planets.push(earth);
+        planets.push(new Planet("Mars", 180, 10, orbitalPeriods.Mars, color(255, 100, 150)));
+        planets.push(new Planet("Jupiter", 240, 18, orbitalPeriods.Jupiter, color(240, 180, 90)));
+        planets.push(new Planet("Saturn", 300, 16, orbitalPeriods.Saturn, color(180, 220, 255)));
+        planets.push(new Planet("Uranus", 360, 14, orbitalPeriods.Uranus, color(100, 200, 255)));
+        planets.push(new Planet("Neptune", 420, 14, orbitalPeriods.Neptune, color(80, 100, 255)));
+
+        slider = createSlider(0, 364, 0);
+        slider.position(20, 20);
+        slider.style("width", "300px");
+      }
+
+      function draw() {
+        background(255);
+        translate(width / 2, height / 2);
+        scale(zoom);
+
+        daysPassed = slider.value();
+
+        drawOrbits();
+        sun.display();
+
+        for (let p of planets) {
+          p.display(daysPassed);
+        }
+
+        drawEarthWithRotation(daysPassed);
+        drawSimulatedDate(daysPassed);
+      }
+
+      function drawOrbits() {
+        noFill();
+        stroke(220);
+        for (let p of planets) {
+          ellipse(0, 0, p.distance * 2);
+        }
+      }
+
+      function drawSimulatedDate(days) {
+        let baseDate = new Date(2024, 0, 1);
+        baseDate.setDate(baseDate.getDate() + days);
+        let dateStr = baseDate.toLocaleDateString("pt-BR");
+        noStroke();
+        fill(0);
+        textSize(16);
+        textAlign(LEFT, CENTER);
+        text(`Data simulada: ${dateStr}`, -width / 2 + 340, -height / 2 + 35);
+      }
+
+      class CelestialBody {
+        constructor(x, y, r, col) {
+          this.x = x;
+          this.y = y;
+          this.r = r;
+          this.col = col;
+        }
+
+        display() {
+          noStroke();
+          fill(this.col);
+          ellipse(this.x, this.y, this.r * 2);
+        }
+      }
+
+      class Planet {
+        constructor(name, distance, radius, period, col) {
+          this.name = name;
+          this.distance = distance;
+          this.radius = radius;
+          this.period = period;
+          this.col = col;
+        }
+
+        display(days) {
+          let angle = (TWO_PI * days) / this.period;
+          let x = cos(angle) * this.distance;
+          let y = sin(angle) * this.distance;
+
+          push();
+          translate(x, y);
+          fill(this.col);
+          noStroke();
+          ellipse(0, 0, this.radius * 2);
+          pop();
+        }
+      }
+
+      function drawEarthWithRotation(days) {
+        let angle = (TWO_PI * days) / orbitalPeriods.Earth;
+        let x = cos(angle) * earth.distance;
+        let y = sin(angle) * earth.distance;
+
+        push();
+        translate(x, y);
+
+        // Terra com dia/noite
+        rotate(frameCount * 0.01); // rotação contínua
+        noStroke();
+
+        fill(earth.col);
+        arc(0, 0, earth.radius * 2, earth.radius * 2, -HALF_PI, HALF_PI, PIE);
+        fill(30);
+        arc(0, 0, earth.radius * 2, earth.radius * 2, HALF_PI, 3 * HALF_PI, PIE);
+
+        // Vitória (ponto vermelho)
+        fill('red');
+        ellipse(0, -earth.radius + 2, 3);
+
+        pop();
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+        slider.position(20, 20);
+      }
+    </script>
+  </body>
+</html>
